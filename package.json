@@ -1,0 +1,12 @@
+{
+  "name": "@avant-iconic/axis",
+  "version": "0.1.0",
+  "description": "AXIS: the generic Apex core (ledger, machines, scheduler, fingerprint cache, test index, pack and speculative queue, deciders, cards).",
+  "type": "module",
+  "main": "src/axis-ledger.mjs",
+  "license": "Other",
+  "private": false,
+  "scripts": {
+    "test": "node --test"
+  }
+}
