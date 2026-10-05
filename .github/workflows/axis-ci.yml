@@ -1,0 +1,43 @@
+name: axis-ci
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The AXIS public repo is maintained by the Apex fleet. It runs on the fleet's
+# own self-hosted runner (the `apex-verify` label the apex-nexus verify
+# workflow uses), never on a GitHub-hosted runner: the fleet's suites are
+# measured against that box (docs/SELF_HOSTED_CI.md) and a public repo must not
+# bill the operator's minutes for work the fleet already does on its own Mac.
+jobs:
+  test:
+    name: test
+    runs-on: [self-hosted, macOS, ARM64, apex-verify]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: node
+        run: node --version
+      - name: test the extracted core
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The 17 modules in docs/axis/EXTRACTION.md are the generic core.
+          # Their exercising tests still live in apex-nexus/tests (EXTRACTION.md
+          # "What stays in Apex" -- the ingesters, daemon and CLIs stay, and the
+          # tests that touch them stay with them), so this repo currently has
+          # no test files of its own. `node --test src/*.test.mjs` therefore
+          # matches nothing, and that is a KNOWN state, not a silent pass: the
+          # glob is printed before the run so the zero is visible.
+          shopt -s nullglob
+          files=( src/*.test.mjs )
+          echo "test files found: ${#files[@]}"
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no test files in this repo yet -- the core's tests are in apex-nexus/tests and were not moved (docs/axis/EXTRACTION.md)"
+            exit 0
+          fi
+          node --test "${files[@]}"

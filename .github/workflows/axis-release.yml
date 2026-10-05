@@ -1,0 +1,39 @@
+name: axis-release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# "Releases pushed continuously by the fleet" (ask 8355): every push to main
+# publishes a release, so the public repo's history is always reachable as a
+# downloadable artifact without anyone remembering to cut one. The tag is the
+# commit short-sha, so it is unique per push and the job is idempotent -- a
+# re-push of the same commit does not create a second release.
+jobs:
+  release:
+    name: release
+    runs-on: [self-hosted, macOS, ARM64, apex-verify]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: publish a continuous release for this commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse --short HEAD)
+          tag="continuous/$sha"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag already exists for this commit"
+            exit 0
+          fi
+          gh release create "$tag" \
+            --title "continuous $sha" \
+            --notes "Fleet-pushed release for commit $sha. The 17 AXIS core modules (docs/axis/EXTRACTION.md), zero dependencies."
